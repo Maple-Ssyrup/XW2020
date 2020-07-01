@@ -32,6 +32,7 @@ print("shape: ",data.shape, data_train.shape, data_test.shape)
 
 
 data.isnull().sum()
+#remove duplicates
 df = data.drop_duplicates(subset=['fragment_id']).reset_index(drop=True)[['fragment_id', 'behavior_id']]
 df.head(20)
 
@@ -49,6 +50,7 @@ train_df.head(20)
 df.isnull().sum()
 
 drop_feat = []
+###这句没看懂
 used_feat = [f for f in train_df.columns if f not in (['fragment_id', label] + drop_feat)]
 print("used & drop feat:", len(used_feat),len(drop_feat))
 print("used_feat", used_feat)
