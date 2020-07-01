@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jun 24 21:08:52 2020
+
+@author: sallyjiang
+"""
+
+import numpy as np
+import pandas as pd
+
+from sklearn.model_selection import StratifiedKFold
+pip install lightgbm
+import lightgbm as lgb
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
+from sklearn.preprocessing import LabelEncoder
+import seaborn as sns
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+from scipy.stats import entropy
+import gc
+import os
+
+
+data_path = "~/Documents/2020XW/"
+data_train = pd.read_csv(data_path+'sensor_train.csv')
+data_test = pd.read_csv(data_path+'sensor_test.csv')
+data_test['fragment_id'] += 10000
+label = 'behavior_id'
+data = pd.concat([data_train, data_test], sort=False)
+print("shape: ",data.shape, data_train.shape, data_test.shape)
+
+
+data.isnull().sum()
+df = data.drop_duplicates(subset=['fragment_id']).reset_index(drop=True)[['fragment_id', 'behavior_id']]
+df.head(20)
+
+data['acc'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
+data['accg'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
+
+for f in tqdm([f for f in data.columns if 'acc' in f]):
+    for stat in ['min', 'max', 'mean', 'median', 'std', 'skew']:
+        df[f+'_'+stat] = data.groupby('fragment_id')[f].agg(stat).values
+
+train_df = df[df[label].isna()==False].reset_index(drop=True)
+test_df = df[df[label].isna()==True].reset_index(drop=True)
+print("df_shape:", df.shape, train_df.shape,test_df.shape)
+train_df.head(20)
+df.isnull().sum()
+
+drop_feat = []
+used_feat = [f for f in train_df.columns if f not in (['fragment_id', label] + drop_feat)]
+print("used & drop feat:", len(used_feat),len(drop_feat))
+print("used_feat", used_feat)
+
+train_x = train_df[used_feat]
+train_y = train_df[label]
+test_x = test_df[used_feat]
+test_x.shape,train_x.shape,train_y.shape
+
+####lgb baseline
+scores = []
+imp = pd.DataFrame()
+imp['feat'] = used_feat
+
+params = {
+    'learning_rate': 0.1,
+    'metric': 'multi_error',
+    'objective': 'multiclass',
+    'num_class': 19,
+    'feature_fraction': 0.80,
+    'bagging_fraction': 0.75,
+    'bagging_freq': 2,
+    'n_jobs': 4,
+    'seed': 2020,
+    'max_depth': 10,
+    'num_leaves': 64,
+    'lambda_l1': 0.5,
+    'lambda_l2': 0.5,
+}
+
+oof_train = np.zeros((len(train_x), 19))
+preds = np.zeros((len(test_x), 19))
+folds = 5
+seeds = [44 , 2020, 527, 1527]
+for seed in seeds:
+    kfold = StratifiedKFold(n_splits=folds, shuffle=True, random_state=seed)
+    for fold, (trn_idx, val_idx) in enumerate(kfold.split(train_x, train_y)):
+        x_trn, y_trn, x_val, y_val = train_x.iloc[trn_idx], train_y.iloc[trn_idx], train_x.iloc[val_idx], train_y.iloc[val_idx]
+        train_set = lgb.Dataset(x_trn, y_trn)
+        val_set = lgb.Dataset(x_val, y_val)
+
+        model = lgb.train(params, train_set, num_boost_round=500000,
+                          valid_sets=(train_set, val_set), early_stopping_rounds=50,
+                          verbose_eval=20)
+        oof_train[val_idx] += model.predict(x_val) / len(seeds)
+        preds += model.predict(test_x) / folds / len(seeds)
+        scores.append(model.best_score['valid_1']['multi_error'])
+        imp['gain' + str(fold + 1)] = model.feature_importance(importance_type='gain')
+        imp['split' + str(fold + 1)] = model.feature_importance(importance_type='split')
+        del x_trn, y_trn, x_val, y_val, model, train_set, val_set
+        gc.collect()
