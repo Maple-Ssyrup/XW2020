@@ -79,7 +79,37 @@ def acc_combo(clf,X_test,y_test):
         return 1.0/3
     else:
         return 0.0
- 
+    
+####basic classifiers 
+acc_svm=[]
+
+for i in range(3):
+    X_svm = train_df.values
+    
+    svm_train_len = int(len(train_df)*0.7)
+    
+    np.random.seed(i*16 + 97)
+    np.random.shuffle(X_svm)
+    train_svm = X_svm[:svm_train_len]
+    val_svm = X_svm[svm_train_len:]
+    
+    np.random.seed(i*11 + 79)
+    np.random.shuffle(train_svm)
+    feature_train_svm = train_svm[:,2:]
+    label_train_svm = train_svm[:,1]
+    feature_val_svm = val_svm[:,2:]
+    label_val_svm = val_svm[:,1]
+    
+    
+    only_svm = LinearSVC(loss = 'hinge', C = 500, class_weight = 'balanced')
+    only_svm.fit(feature_train_svm,label_train_svm)
+    print('第{}次SVM的误差为{}:'.format(i+1,score_err(only_svm,feature_val_svm,label_val_svm)))
+    print('第{}次SVM的分数为{}:'.format(i+1,acc_combo(only_svm,feature_val_svm,label_val_svm)))
+
+    acc_svm.append(acc_combo(only_svm,feature_val_svm,label_val_svm))
+
+    
+    
 ####lgb baseline
 scores = []
 imp = pd.DataFrame()
