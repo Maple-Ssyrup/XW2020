@@ -1,0 +1,97 @@
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# load data
+data_path = "~/Documents/2020XW/"
+train = pd.read_csv(data_path+'sensor_train.csv')
+test = pd.read_csv(data_path+'sensor_test.csv')
+
+label = 'behavior_id'
+
+print('train and test : ({},{})'.format(train.shape, test.shape))
+
+#check missing value
+print('Number of duplicates in train: {}'.format(sum(train.duplicated())))
+print('Number of duplicates in test : {}'.format(sum(test.duplicated())))
+
+print('We have {} NaN/Null values in train'.format(train.isnull().values.sum()))
+print('We have {} NaN/Null values in test'.format(test.isnull().values.sum()))
+
+#trans to code 
+def trans(label):
+        mapping = {0: 'A_0', 1: 'A_1', 2: 'A_2', 3: 'A_3', 
+        4: 'D_4', 5: 'A_5', 6: 'B_1',7: 'B_5', 
+        8: 'B_2', 9: 'B_3', 10: 'B_0', 11: 'A_6', 
+        12: 'C_1', 13: 'C_3', 14: 'C_0', 15: 'B_6', 
+        16: 'C_2', 17: 'C_5', 18: 'C_6'}
+    # 将行为ID转为编码
+        code = [mapping[i] for i in label]
+        return code
+
+def add_code(df):
+    df['code'] = pd.Series(trans(df[label]))
+    return df   
+
+train = add_code(train)
+
+##add hand phone info 
+def add_handphone(df):
+    handphone = []
+    for a in df['code']:
+        if a.split("_")[0] == 'D':
+            handphone.append(1)
+        else:
+            handphone.append(0)
+    if len(df[label]) == len(handphone):
+        df['handphone'] = pd.Series(handphone)
+        return df
+    else:
+        print('ERROR')
+
+
+train = add_handphone(train)
+train.head(3)
+
+###separate scenario and motion 
+train['scenario'] = train.apply(lambda row: row.code.split('_')[0], axis = 1)
+train['motion'] = train.apply(lambda row: row.code.split('_')[1], axis = 1)
+
+train.head(10)
+
+###Visulization --motion 
+
+sns.set_style('whitegrid')
+plt.rcParams['font.family'] = 'Dejavu Sans'
+
+    #--handphone
+plt.figure(figsize=(8,4))
+plt.title('Data provided by each user', fontsize=20)
+sns.countplot(x=label, hue='handphone', data = train) # label!
+plt.show()
+
+    #--motion
+plt.figure(figsize=(8,4))
+plt.title('Data provided by each user', fontsize=20)
+sns.countplot(x='motion', hue='motion', data = train)
+plt.show()
+
+#### Transformation: each fragment_id get one record with basic stats 
+data = train
+df = train.drop_duplicates(subset=['fragment_id']).reset_index(drop=True)[['fragment_id', 'behavior_id','motion','handphone','scenario']]
+
+data['acc'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
+data['accg'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
+
+from tqdm import tqdm
+for f in tqdm([f for f in data.columns if 'acc' in f]):
+    for stat in ['min', 'max', 'mean', 'median', 'std', 'skew']:
+        df[f+'_'+stat] = data.groupby('fragment_id')[f].agg(stat).values
+
+
+
+
+
+
