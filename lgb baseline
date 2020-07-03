@@ -431,7 +431,7 @@ from sklearn.model_selection import train_test_split
 X_train, X_test, Y_train, Y_test = train_test_split(X,Y,test_size=0.15)
 
 ####public test set
-X_test_public = df_test_3class[df_test_3class['scenario_3class'] =='AB'].drop(['fragment_id'], axis=1) 
+X_test_public = df_test_3class[df_test_3class['pred_scenario_3class'] =='AB'].drop(['fragment_id'], axis=1) 
 
 X_train, X_test, Y_train, Y_test = train_test_split(X,Y,test_size=0.15)
 
