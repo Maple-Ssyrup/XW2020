@@ -827,8 +827,8 @@ model.fit(X_train,
                 ####### accuarcy 0.7052
 
 # 3.3 Predictions: 
-###Get Public_test input 
 
+###Get Public_test input 
 X_test, test_frag_id = convert_test(test_balanced)
 
 print(len(X_test[0]))
@@ -837,23 +837,43 @@ print(len(X_test))
 print(len(test_frag_id))
 
 pred_motion = model.predict(X_test)     ####shape = （7500，6）
-        
-        
 b = pd.DataFrame(pred_motion)
-b['fragment_id'] = np.array(test_frag_id)
+b['fragment_id'] = test_frag_id
+b.head()
 
 
-b['pred_motion']= pred_motion                  #######error: dimension
-b = b.drop(b.columns[0], axis=1)
+### get motion from dummies
+motion = {
+    0: 0,
+    1: 1,
+    2: 2,
+    3: 3,
+    4: 5,
+    5: 6,
+}
+
+def convert3(Y_pred):
+    Y_pred = pd.Series([motion[y] for y in np.argmax(Y_pred, axis=1)])
+    return Y_pred
+
+
+
+pred_motion3 = convert3(pred_motion)
+pred_motion3.describe()
+pred_motion3.shape
+b['pred_motion']= pred_motion3   
 b.head(10)
-b.to_csv("./b.csv") 
+
+b = b.drop(b.columns[0:6], axis=1)
+b.head(10)
+##b.to_csv("./b.csv") 
 
 sub_a.head(10)
 sub_b = pd.merge(sub_a,b,how='left')
 #####
-sub_b['Motion'] = np.where(sub_b['Scenario']=='D','4', sub_a['pred_motion'])
+sub_b['Motion'] = np.where(sub_b['Scenario']=='D','4', sub_b['pred_motion'])
 sub_b = sub_b.drop(['behavior_id','pred_motion'], axis=1)
-sub_b['behavior_code'] = sub_b['Scenario'] + '_' + sub_a['Motion']
+sub_b['behavior_code'] = sub_b['Scenario'] + '_' + sub_b['Motion']
 sub_b.head(10)
 
 
@@ -873,7 +893,7 @@ def add_id(df):
     return df  
 
 sub_b = add_id(sub_b)
-sub_final = sub_b.drop(['behavior_code','pred_motion','Scenario', 'Motion'], axis=1)
+sub_final = sub_b.drop(sub_b.columns[1:4], axis=1)
 sub_final.to_csv("./sub_final0704.csv") 
 
 
