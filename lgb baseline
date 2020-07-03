@@ -851,8 +851,29 @@ sub_b = pd.merge(sub_a,b,how='left')
 #####
 sub_b['Motion'] = np.where(sub_b['Scenario']=='D','4', sub_a['pred_motion'])
 sub_b = sub_b.drop(['behavior_id','pred_motion'], axis=1)
-
+sub_b['behavior_code'] = sub_b['Scenario'] + '_' + sub_a['Motion']
 sub_b.head(10)
+
+
+label = 'behavior_code'
+def trans(label):
+        mapping = {'A_0':0 , 'A_1':1 , 'A_2':2 , 'A_3':3, 
+                   'D_4':4 , 'A_5':5 , 'B_1':6 , 'B_5':7, 
+                   'B_2':8 , 'B_3':9 , 'B_0':10 , 'A_6':11, 
+                   'C_1':12, 'C_3':13, 'C_0':14 , 'B_6':15, 
+                   'C_2':16, 'C_5':17, 'C_6':18}
+    # 将行为编码转为id
+        id = [mapping[i] for i in label]
+        return id
+
+def add_id(df):
+    df['behavior_id'] = pd.Series(trans(df[label]))
+    return df  
+
+sub_b = add_id(sub_b)
+sub_final = sub_b.drop(['behavior_code','pred_motion','Scenario', 'Motion'], axis=1)
+sub_final.to_csv("./sub_final0704.csv") 
+
 
 
 
