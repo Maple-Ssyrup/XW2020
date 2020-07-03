@@ -837,22 +837,21 @@ print(len(X_test))
 print(len(test_frag_id))
 
 pred_motion = model.predict(X_test)
-
-                     
+        
         
 b = pd.DataFrame(pred_motion)
 b['fragment_id'] = np.array(test_frag_id)
 b['pred_motion']= pred_motion
-
 b = b.drop(b.columns[0], axis=1)
 b.head(10)
+
 
 sub_a.head(10)
 sub_b = pd.merge(sub_a,b,how='left')
 #####
 sub_b['Motion'] = np.where(sub_b['Scenario']=='D','4', sub_a['pred_motion'])
-
 sub_b = sub_b.drop(['behavior_id','pred_motion'], axis=1)
+
 sub_b.head(10)
 
 
