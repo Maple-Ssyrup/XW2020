@@ -772,10 +772,6 @@ def convert_test(df):
 
 #Get training features and lables for LSTM
 X_train, Y_train = convert(train_abc_balanced)
-        #(Public test):
-X_test = convert_test(test_balanced)
-
-
         
 timesteps = len(X_train[0])
 input_dim = len(X_train[0][0])
@@ -785,6 +781,7 @@ print(input_dim)
 print(n_classes)
 print(len(X_train))
 print(len(Y_train))
+
 
 from sklearn.model_selection import train_test_split
 X_train, X_test, Y_train, Y_test = train_test_split(X_train,Y_train,test_size=0.15)
@@ -832,8 +829,14 @@ model.fit(X_train,
 # 3.3 Predictions: 
 ###Get Public_test input 
 
+X_test = convert_test(test_balanced)
 
-###trainPredict = model.predict(trainX)
+print(len(X_test[0]))
+print(len(X_test[0][0]))
+print(len(X_test))
+
+
+motionPredict = model.predict(X_test)
 
                      
                      
