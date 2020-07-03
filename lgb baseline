@@ -824,7 +824,7 @@ model.fit(X_train,
           batch_size=batch_size,
           validation_data=(X_test, Y_test),
           epochs=epochs)
-
+                ####### accuarcy 0.7052
 
 # 3.3 Predictions: 
 ###Get Public_test input 
@@ -836,12 +836,14 @@ print(len(X_test[0][0]))
 print(len(X_test))
 print(len(test_frag_id))
 
-pred_motion = model.predict(X_test)
+pred_motion = model.predict(X_test)     ####shape = （7500，6）
         
         
 b = pd.DataFrame(pred_motion)
 b['fragment_id'] = np.array(test_frag_id)
-b['pred_motion']= pred_motion
+
+
+b['pred_motion']= pred_motion                  #######error: dimension
 b = b.drop(b.columns[0], axis=1)
 b.head(10)
 b.to_csv("./b.csv") 
