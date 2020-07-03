@@ -844,7 +844,7 @@ b['fragment_id'] = np.array(test_frag_id)
 b['pred_motion']= pred_motion
 b = b.drop(b.columns[0], axis=1)
 b.head(10)
-
+b.to_csv("./b.csv") 
 
 sub_a.head(10)
 sub_b = pd.merge(sub_a,b,how='left')
