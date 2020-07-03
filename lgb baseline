@@ -697,7 +697,6 @@ def convert(df):
     y_train = convert_y(train_abc_balanced.groupby('fragment_id').first()['motion'])
     Y_train = y_train.values
     
-    
     # convert x
     count1 = 0
     for id in frag_id:
@@ -729,9 +728,53 @@ def convert(df):
     return X_train, Y_train
 
 
+
+
+
+
+def convert_test(df):
+
+    frag_id = df.fragment_id.unique()
+    
+    # convert x
+    count1 = 0
+    for id in frag_id:
+        tmp = test_balanced[test_balanced['fragment_id'] == id]
+        tmp = tmp.drop(columns = ['fragment_id','time_point','n_frag',
+               'ori_index', 'grp_index'])
+     
+        # one fragment
+        count2 = 0
+        for i in range(len(tmp['timestamp'])):
+            row = tmp[tmp['timestamp']==i].iloc[:,0:7].values
+            if count2 == 0:
+                result2 = row
+                count2 = 1
+            else:
+                result2 = np.concatenate((result2, row))
+        
+        if count1 == 0:            
+            result1 = result2
+            count1 = 1
+        elif count1 == 1:
+            result1 = np.concatenate(([result1], [result2]))
+            count1 = 2
+        else:
+            result1 = np.concatenate((result1, [result2]))
+        
+    X_test = result1
+        
+    return X_test
+
+
+
+
+
 #Get training features and lables for LSTM
 X_train, Y_train = convert(train_abc_balanced)
         #(Public test):
+X_test = convert_test(test_balanced)
+
 
         
 timesteps = len(X_train[0])
