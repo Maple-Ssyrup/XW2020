@@ -583,11 +583,23 @@ df = train.drop_duplicates(subset=['fragment_id']).reset_index(drop=True)[['frag
                                                                            'behavior_id','motion','handphone','scenario']]
 data['acc_'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
 #data['accg'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
-
 from tqdm import tqdm
 for f in tqdm([f for f in data.columns if 'acc_' in f]):
     for stat in ['min', 'max', 'mean', 'median', 'std', 'skew']:
         df[f+'_'+stat] = data.groupby('fragment_id')[f].agg(stat).values
+        
+        
+        
+data = test
+df_test = test.drop_duplicates(subset=['fragment_id']).reset_index(drop=True)[['fragment_id']]
+data['acc_'] = (data['acc_x'] ** 2 + data['acc_y'] ** 2 + data['acc_z'] ** 2) ** 0.5
+data['accg'] = (data['acc_xg'] ** 2 + data['acc_yg'] ** 2 + data['acc_zg'] ** 2) ** 0.5
+from tqdm import tqdm
+for f in tqdm([f for f in data.columns if 'acc' in f]):
+    for stat in ['min', 'max', 'mean', 'median', 'std', 'skew']:
+        df_test[f+'_'+stat] = data.groupby('fragment_id')[f].agg(stat).values
+            
+        
         
 # 1.2 Get ABC scenario        
 train_abc = train[~(train.behavior_id == 4)].reset_index(drop=True)
@@ -596,6 +608,13 @@ train_abc = train_abc.drop(['code','scenario','behavior_id','handphone'],axis=1)
 train_abc['ori_index'] = train_abc.index
 train_abc['n_frag'] = train_abc.groupby(by='fragment_id', sort=False)['time_point'].transform('nunique').astype(int)
 train_abc.head()
+train_abc.shape
+        #(Public test):
+test['ori_index'] = test.index
+test['n_frag'] = test.groupby(by='fragment_id', sort=False)['time_point'].transform('nunique').astype(int)
+test.head()
+test.shape
+
 
 #2. Get the balanced dataset(same time_point length): 
 import random as rd
@@ -603,7 +622,8 @@ import dask
 from dask.diagnostics import ProgressBar
 
 base = train_abc['n_frag'].max()
-
+        #(Public test):
+base_test = test['n_frag'].max()    
 
 def add_time(grp): # df, one fragment_id
     grp = grp.reset_index(drop=True).sort_values(by=['fragment_id','time_point'])
@@ -647,18 +667,25 @@ def apply_to_grp(df):
 
 train_abc_balanced = apply_to_grp(train_abc)
 train_abc_balanced.head()
-
 train_abc_balanced.groupby(['fragment_id']).size().min()
 train_abc_balanced['timestamp'] = train_abc_balanced['grp_index']
 train_abc_balanced['n_frag'] = train_abc_balanced.groupby(by='fragment_id', sort=False)['timestamp'].transform('nunique').astype(int)
 train_abc_balanced['n_frag'].describe()
+
+        #(Public test):
+test_balanced = apply_to_grp(test)
+test_balanced.head()
+test_balanced.groupby(['fragment_id']).size().min()
+test_balanced['timestamp'] = test_balanced['grp_index']
+test_balanced['n_frag'] = test_balanced.groupby(by='fragment_id', sort=False)['timestamp'].transform('nunique').astype(int)
+test_balanced['n_frag'].describe()
+
 
 #3.Modelling  LSTM 
 #3.1 Input 
 train_abc_balanced['timestamp'] = train_abc_balanced['grp_index']
 
 def convert(df):
-
 
     frag_id = df.fragment_id.unique()
     y_train = df.groupby('fragment_id').first()['motion'].values
@@ -702,9 +729,11 @@ def convert(df):
     return X_train, Y_train
 
 
-
+#Get training features and lables for LSTM
 X_train, Y_train = convert(train_abc_balanced)
+        #(Public test):
 
+        
 timesteps = len(X_train[0])
 input_dim = len(X_train[0][0])
 n_classes = len(Y_train[0])
