@@ -764,7 +764,7 @@ def convert_test(df):
         
     X_test = result1
         
-    return X_test
+    return X_test, frag_id
 
 
 
@@ -829,12 +829,12 @@ model.fit(X_train,
 # 3.3 Predictions: 
 ###Get Public_test input 
 
-X_test = convert_test(test_balanced)
+X_test, test_frag_id = convert_test(test_balanced)
 
 print(len(X_test[0]))
 print(len(X_test[0][0]))
 print(len(X_test))
-
+print(len(test_frag_id))
 
 motionPredict = model.predict(X_test)
 
