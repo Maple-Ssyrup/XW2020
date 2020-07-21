@@ -10,6 +10,10 @@ Created on Wed Jun 24 21:08:52 2020
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import f1_score
+import lightgbm as lgb
+
 import seaborn as sns
 from tqdm import tqdm
 
@@ -178,7 +182,7 @@ facetgrid.map(sns.distplot,'accg_mean', hist=False)\
     .add_legend()
 plt.show()
 
-# 4.7 acc/accg mean (by 'scenario')
+# 4.7 acc/accg std (by 'scenario')
 sns.set_palette("Set1", desat=0.80)
 facetgrid = sns.FacetGrid(df, hue='scenario', size=6,aspect=2)
 facetgrid.map(sns.distplot,'acc_std', hist=False)\
